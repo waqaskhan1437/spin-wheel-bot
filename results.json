@@ -1,10 +1,20 @@
 {
   "state": "running",
   "runId": "job-2026-09-12T202957",
-  "runDone": 0,
+  "runDone": 1,
   "runTotal": 1,
-  "history": [],
-  "updatedAt": "2026-09-12T20:30:48.103Z",
+  "history": [
+    {
+      "no": "03026084179",
+      "status": "fail",
+      "reason": "already-used",
+      "reward": "",
+      "at": "2026-09-12T20:30:56.003Z",
+      "ms": 2282,
+      "runId": "job-2026-09-12T202957"
+    }
+  ],
+  "updatedAt": "2026-09-12T20:30:56.004Z",
   "startedAt": "2026-09-12T20:30:48.102Z",
   "doneAt": "2026-09-12T19:49:18.890Z"
 }
