@@ -19,7 +19,7 @@ const PARALLEL = Math.max(1, parseInt(process.env.PARALLEL || '2', 10));
 const MAX_CAPTCHA_ATTEMPTS = parseInt(process.env.MAX_CAPTCHA_ATTEMPTS || '6', 10);
 const MIN_DELAY_MS = parseInt(process.env.MIN_DELAY_MS || '1500', 10);
 const MAX_DELAY_MS = parseInt(process.env.MAX_DELAY_MS || '4000', 10);
-const COMMIT_EVERY = parseInt(process.env.COMMIT_EVERY || '3', 10);
+const COMMIT_EVERY = Math.max(1, parseInt(process.env.COMMIT_EVERY || '1', 10));
 const JOB_TIMEOUT_MIN = parseInt(process.env.JOB_TIMEOUT_MIN || '45', 10);
 const MAX_PAGE_WAIT_MS = parseInt(process.env.MAX_PAGE_WAIT_MS || '60000', 10);
 
@@ -156,28 +156,50 @@ function classifyReason(low, full) {
   return full.slice(0, 100) || 'unknown-error';
 }
 
+async function extractMoneyFromPage(page, number, started) {
+  let reward = '';
+  const dialogMsg = await readLastDialog(page);
+  let bodyText = '';
+  try {
+    bodyText = await page.evaluate(() => document.body.innerText).catch(() => '');
+  } catch (_) {}
+  reward = extractMoney(dialogMsg || bodyText);
+  fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+  await page.screenshot({ path: path.join(OUTPUT_DIR, `${number}.png`), fullPage: true }).catch(() => {});
+  return { no: number, status: 'ok', reason: '', reward, at: now(), ms: Date.now() - started };
+}
+
 async function attemptSpin(page, number, runId, started) {
   let reward = '';
-  try {
-    const clicked = await page.evaluate(() => {
-      const els = Array.from(document.querySelectorAll('button, input[type="submit"], a, .btn'));
-      const el = els.find(e => /spin/i.test((e.id || '') + ' ' + (e.value || '') + ' ' + (e.innerText || '')));
-      if (el) { el.click(); return true; }
-      return false;
-    });
-    if (clicked) {
-      console.log(`[spin] ${number}: spin button pressed`);
-      await sleep(3000);
-    }
-  } catch (_) {}
+  const spinPressed = await page.evaluate(() => {
+    const els = Array.from(document.querySelectorAll('button, input[type="submit"], a, .btn'));
+    const el = els.find(e => /spin/i.test((e.id || '') + ' ' + (e.value || '') + ' ' + (e.innerText || '')));
+    if (el) { el.click(); return true; }
+    return false;
+  });
+
+  if (spinPressed) {
+    console.log(`[spin] ${number}: spin button pressed`);
+    try {
+      const res = await page.waitForFunction(
+        () => {
+          const d = window.__lastDialog;
+          return d && d.length > 0;
+        },
+        { timeout: 25000, polling: 500 }
+      );
+      reward = extractMoney(await page.evaluate(() => window.__lastDialog || ''));
+    } catch (_) {}
+  }
+
   try {
     const bodyText = await page.evaluate(() => document.body.innerText).catch(() => '');
-    reward = extractMoney(bodyText);
+    if (!reward) reward = extractMoney(bodyText);
     fs.mkdirSync(OUTPUT_DIR, { recursive: true });
     await page.screenshot({ path: path.join(OUTPUT_DIR, `${number}.png`), fullPage: true }).catch(() => {});
     return { no: number, status: 'ok', reason: '', reward, at: now(), ms: Date.now() - started, runId };
   } catch (_) {
-    return { no: number, status: 'ok', reason: '', reward: '', at: now(), ms: Date.now() - started, runId };
+    return { no: number, status: 'ok', reason: '', reward, at: now(), ms: Date.now() - started, runId };
   }
 }
 
@@ -280,7 +302,12 @@ async function main() {
   const runner = async () => {
     const page = await browser.newPage();
     page.setDefaultTimeout(MAX_PAGE_WAIT_MS);
-    page.on('dialog', d => d.dismiss().catch(() => {}));
+    page.on('dialog', d => {
+      const msg = (d.message() || '').trim();
+      page.evaluate(m => { window.__lastDialog = m; }, msg).catch(() => {});
+      d.dismiss().catch(() => {});
+    });
+    await page.evaluateOnNewDocument(() => { window.__lastDialog = ''; });
     while (true) {
       const myIdx = idx++;
       if (myIdx >= numbers.length) break;
