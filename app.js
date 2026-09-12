@@ -54,12 +54,27 @@ async function github(pathname, method = 'GET', body = null) {
 }
 
 async function fetchRaw(file) {
-  const { owner, repo } = settings();
-  const res = await fetch(
-    `https://raw.githubusercontent.com/${owner}/${repo}/main/${file}?v=${Date.now()}`
-  );
-  if (!res.ok) throw new Error(`raw ${file}: ${res.status}`);
-  return res.json();
+  const cfg = settings();
+  const headers = { 'Accept': 'application/vnd.github+json' };
+  if (cfg.token) headers['Authorization'] = 'Bearer ' + cfg.token;
+  try {
+    const api = await fetch(
+      `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${file}`,
+      { headers }
+    );
+    if (api.ok) {
+      const j = await api.json();
+      if (j && j.content) return JSON.parse(utf8FromB64(j.content));
+    }
+  } catch (_) {}
+  throw new Error(`file ${file} not available`);
+}
+
+function utf8FromB64(b64) {
+  const bin = atob(b64.replace(/\s/g, ''));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
 }
 
 async function putPending(content, message) {
@@ -111,7 +126,7 @@ function render(results, pending, lastRun) {
   const tab = document.querySelector('.tab.active').dataset.tab;
   renderTable(history, tab);
 
-  if (history.length > 0) lastRun.value = history[history.length - 1].runId || '';
+  if (lastRun && history.length > 0) lastRun.value = history[history.length - 1].runId || '';
 }
 
 function renderTable(history, tab) {
