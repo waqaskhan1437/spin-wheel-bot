@@ -1,1 +1,7 @@
-﻿{"state":"idle","runId":"","history":[],"updatedAt":""}
+{
+  "history": [],
+  "runId": "job-2026-09-12T181814",
+  "state": "running",
+  "startedAt": "2026-09-12T18:18:46.473Z",
+  "updatedAt": "2026-09-12T18:18:46.473Z"
+}
