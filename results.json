@@ -1,7 +1,7 @@
 {
-  "state": "done",
-  "runId": "job-2026-09-12T202957",
-  "runDone": 1,
+  "state": "running",
+  "runId": "job-2026-09-12T203142",
+  "runDone": 0,
   "runTotal": 1,
   "history": [
     {
@@ -14,7 +14,7 @@
       "runId": "job-2026-09-12T202957"
     }
   ],
-  "updatedAt": "2026-09-12T20:31:01.595Z",
-  "startedAt": "2026-09-12T20:30:48.102Z",
+  "updatedAt": "2026-09-12T20:32:29.065Z",
+  "startedAt": "2026-09-12T20:32:29.064Z",
   "doneAt": "2026-09-12T20:31:01.595Z"
 }
