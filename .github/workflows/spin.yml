@@ -48,7 +48,7 @@ jobs:
         run: node script.js
         env:
           TARGET_URL: https://my.ptcl.net.pk/SpinTheWheel/Default.aspx
-          PARALLEL: '6'
+          PARALLEL: '4'
           JOB_TIMEOUT_MIN: '45'
 
       - name: Upload debug screenshots

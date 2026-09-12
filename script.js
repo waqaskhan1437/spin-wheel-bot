@@ -271,7 +271,21 @@ async function spinOnce(page, number, runId) {
 async function main() {
   const pending = readJSON('pending.json', { numbers: [] });
   const rawNumbers = Array.isArray(pending.numbers) ? pending.numbers : [];
-  const numbers = [...new Set(rawNumbers.map(String))].filter(n => /^03\d{9}$/.test(n));
+  let numbers = [...new Set(rawNumbers.map(String))].filter(n => /^03\d{9}$/.test(n));
+
+  let results = readJSON(RESULTS_FILE, { history: [] });
+  if (!Array.isArray(results.history)) results.history = [];
+
+  const done = new Set(
+    results.history
+      .filter(x => x.status === 'ok' || x.reason === 'already-used')
+      .map(x => x.no)
+  );
+  const before = numbers.length;
+  numbers = numbers.filter(n => !done.has(n));
+  if (before !== numbers.length) {
+    console.log(`[dedupe] skipped ${before - numbers.length} already-processed numbers`);
+  }
 
   if (numbers.length === 0) {
     console.log('[skip] no pending numbers');
@@ -280,9 +294,6 @@ async function main() {
   const runId = (pending.runId && String(pending.runId)) || `job-${Date.now()}`;
 
   configureGitAuth();
-
-  let results = readJSON(RESULTS_FILE, { history: [] });
-  if (!Array.isArray(results.history)) results.history = [];
   results = { ...results, runId, state: 'running', startedAt: now(), updatedAt: now() };
   writeJSON(RESULTS_FILE, results);
   await publish(`start: ${runId} (${numbers.length} numbers)`);
