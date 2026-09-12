@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   worker:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, ptcl-runner]
     timeout-minutes: 55
     steps:
       - name: Checkout
@@ -27,15 +27,13 @@ jobs:
 
       - name: Probe site reachability
         run: |
-          echo "== DNS =="
-          nslookup my.ptcl.net.pk || true
           echo "== HTTP =="
-          curl -v --max-time 20 -o /dev/null "https://my.ptcl.net.pk/SpinTheWheel/Default.aspx" 2>&1 | tail -30 || true
+          curl.exe -v --max-time 20 -o NUL "https://my.ptcl.net.pk/SpinTheWheel/Default.aspx" 2>&1 | Select-String -Pattern 'Connected|SSL|HTTP|error|Could|HTTP/' | Select-Object -First 10
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
 
       - name: Install dependencies
