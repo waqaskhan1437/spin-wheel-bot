@@ -766,9 +766,11 @@
       "runId": "job-v3-2026-09-12T185902"
     }
   ],
-  "runId": "job-v3-2026-09-12T185902",
-  "state": "done",
-  "startedAt": "2026-09-12T19:00:09.774Z",
-  "updatedAt": "2026-09-12T19:02:54.332Z",
-  "doneAt": "2026-09-12T19:02:54.332Z"
+  "runId": "job-ui-2026-09-12T191401",
+  "state": "running",
+  "startedAt": "2026-09-12T19:23:14.302Z",
+  "updatedAt": "2026-09-12T19:23:14.302Z",
+  "doneAt": "2026-09-12T19:02:54.332Z",
+  "runTotal": 10,
+  "runDone": 0
 }
