@@ -24,10 +24,13 @@ function toBase64(str) {
   return btoa(bin);
 }
 
+let msgTimer = null;
 function setMsg(text, kind) {
   const el = $('#msg');
+  if (msgTimer) clearTimeout(msgTimer);
   el.textContent = text;
   el.className = 'msg ' + (kind || 'info');
+  msgTimer = setTimeout(() => { el.className = 'msg hidden'; }, kind === 'err' ? 8000 : 4000);
 }
 
 function parseNumbers() {
@@ -217,9 +220,18 @@ function openSettings() {
   $('#settingsModal').classList.remove('hidden');
 }
 
+function closeSettings() {
+  $('#settingsModal').classList.add('hidden');
+}
+
 function loadNumbers() {
   const saved = localStorage.getItem(LS.numbers);
   if (saved) $('#numbersInput').value = saved;
+}
+
+function autoOpenSettingsIfMissing() {
+  const cfg = settings();
+  if (!cfg.token) openSettings();
 }
 
 function bindTabs() {
@@ -244,12 +256,15 @@ function bind() {
   });
   $('#btnRetry').addEventListener('click', retry);
   $('#btnSettings').addEventListener('click', openSettings);
-  $('#btnCloseSettings').addEventListener('click', () => $('#settingsModal').classList.add('hidden'));
+  $('#btnCloseSettings').addEventListener('click', closeSettings);
+  $('#settingsModal').addEventListener('click', e => {
+    if (e.target === $('#settingsModal')) closeSettings();
+  });
   $('#btnSaveSettings').addEventListener('click', () => {
     localStorage.setItem(LS.owner, $('#setOwner').value.trim());
     localStorage.setItem(LS.repo, $('#setRepo').value.trim());
     localStorage.setItem(LS.token, $('#setToken').value.trim());
-    $('#settingsModal').classList.add('hidden');
+    closeSettings();
     setMsg('Settings saved.', 'ok');
     refresh();
   });
@@ -262,5 +277,6 @@ function bind() {
 
 bind();
 loadNumbers();
+autoOpenSettingsIfMissing();
 refresh();
 setInterval(refresh, 5000);
