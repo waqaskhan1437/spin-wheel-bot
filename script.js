@@ -23,6 +23,10 @@ const COMMIT_EVERY = Math.max(1, parseInt(process.env.COMMIT_EVERY || '1', 10));
 const JOB_TIMEOUT_MIN = parseInt(process.env.JOB_TIMEOUT_MIN || '45', 10);
 const MAX_PAGE_WAIT_MS = parseInt(process.env.MAX_PAGE_WAIT_MS || '60000', 10);
 const PROTOCOL_TIMEOUT_MS = parseInt(process.env.PROTOCOL_TIMEOUT_MS || '180000', 10);
+// Pause when the recent result window is dominated by "already-used" -> IP quota hit.
+const ALREADY_WINDOW = Math.max(3, parseInt(process.env.ALREADY_WINDOW || '6', 10));
+const ALREADY_PAUSE_AT = Math.max(1, parseInt(process.env.ALREADY_PAUSE_AT || '4', 10));
+const PAUSE_ON_IP_QUOTA = String(process.env.PAUSE_ON_IP_QUOTA || '1') === '1';
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const now = () => new Date().toISOString();
@@ -328,10 +332,11 @@ async function main() {
       .filter(x => x.status === 'ok' || x.reason === 'already-used')
       .map(x => x.no)
   );
+  const skips = new Set(Array.isArray(results.skips) ? results.skips : []);
   const before = numbers.length;
-  numbers = numbers.filter(n => !done.has(n));
+  numbers = numbers.filter(n => !done.has(n) && !skips.has(n));
   if (before !== numbers.length) {
-    console.log(`[dedupe] skipped ${before - numbers.length} already-processed numbers`);
+    console.log(`[dedupe] skipped ${before - numbers.length} already-processed/skipped numbers`);
   }
 
   if (numbers.length === 0) {
@@ -358,10 +363,29 @@ async function main() {
     ],
   });
 
+  const resultRun = [];
   const resultsAcc = [...results.history];
   const seen = new Set();
   let idx = 0;
   const deadline = Date.now() + JOB_TIMEOUT_MIN * 60000;
+  const pauseRequested = { value: false };
+
+  const quotaHit = () => {
+    if (!PAUSE_ON_IP_QUOTA) return false;
+    const tail = resultRun.slice(-ALREADY_WINDOW);
+    if (tail.length < ALREADY_WINDOW) return false;
+    const used = tail.filter(x => x.reason === 'already-used').length;
+    return used >= ALREADY_PAUSE_AT;
+  };
+
+  const requestPause = async () => {
+    if (pauseRequested.value) return;
+    pauseRequested.value = true;
+    console.log(`[pause] IP quota likely hit: ${ALREADY_PAUSE_AT}/${ALREADY_WINDOW} recent results are already-used. Pausing -> change IP, then Resume.`);
+    const tmp = { ...results, history: resultsAcc, runDone: seen.size, pausedReason: 'ip-quota', state: 'ipwait', updatedAt: now() };
+    writeJSON(RESULTS_FILE, tmp);
+    await publish(`paused: ip-quota after ${seen.size}/${numbers.length} (change IP then resume)`);
+  };
 
   const runner = async () => {
     const page = await browser.newPage();
@@ -373,6 +397,7 @@ async function main() {
     });
     await page.evaluateOnNewDocument(() => { window.__lastDialog = ''; });
     while (true) {
+      if (pauseRequested.value) break;
       const myIdx = idx++;
       if (myIdx >= numbers.length) break;
       if (Date.now() > deadline) { resultsAcc.push({ no: numbers[myIdx], status: 'fail', reason: 'job-timeout', reward: '', at: now(), runId }); continue; }
@@ -391,8 +416,14 @@ async function main() {
         res = { no: numbers[myIdx], status: 'fail', reason: 'exception-' + e.message.slice(0, 60), reward: '', at: now(), ms: Date.now() - processStart, runId };
       }
       resultsAcc.push(res);
+      resultRun.push(res);
       seen.add(numbers[myIdx]);
       console.log(`[done] ${res.no} -> ${res.status}${res.reward ? ' (' + res.reward + ')' : ''}`);
+
+      if (quotaHit()) {
+        await requestPause();
+        break;
+      }
 
       if (seen.size % COMMIT_EVERY === 0) {
         const tmp = { ...results, history: resultsAcc, runDone: seen.size, updatedAt: now() };
@@ -408,6 +439,16 @@ async function main() {
   await Promise.all(workers.filter(w => w));
 
   await browser.close().catch(() => {});
+
+  if (pauseRequested.value) {
+    // Keep pending.json intact so the UI "Resume" button re-queues the leftovers.
+    const paused = { ...results, history: resultsAcc, runDone: seen.size, runTotal: numbers.length, pausedReason: 'ip-quota', state: 'ipwait', updatedAt: now() };
+    writeJSON(RESULTS_FILE, paused);
+    try { writeJSON('last-run.json', { runId, pausedAt: now(), ipWait: true, total: resultsAcc.length, ok: resultsAcc.filter(x => x.status === 'ok').length, fail: resultsAcc.filter(x => x.status === 'fail').length, remaining: numbers.length - seen.size }); } catch (_) {}
+    await publish(`ip-wait: ${runId} paused at ${seen.size}/${numbers.length}`);
+    console.log(`[summary] PAUSED (ip-quota) at ${seen.size}/${numbers.length}; pending kept for resume`);
+    return;
+  }
 
   const remaining = numbers.filter(n => !seen.has(n));
   for (const n of remaining) {

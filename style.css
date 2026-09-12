@@ -42,6 +42,7 @@ h2 { font-size: 15px; margin-bottom: 10px; color: var(--dim); }
 .status-pill.running { background: #1f3d26; border-color: var(--green); color: var(--green); animation: pulse 1.4s infinite; }
 .status-pill.error { background: #3d1f1f; border-color: var(--red); color: var(--red); }
 .status-pill.done { background: #1f3d26; border-color: var(--green); color: var(--green); }
+.status-pill.ipwait { background: #3d2d1f; border-color: var(--orange); color: var(--orange); animation: pulse 1.4s infinite; }
 
 @keyframes pulse { 50% { opacity: 0.55; } }
 
@@ -111,6 +112,33 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .msg.err { background: #3d1f1f; color: var(--red); }
 .msg.info { background: #1f2e3d; color: var(--blue); }
 .hidden { display: none !important; }
+
+.banner {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #3d2d1f;
+  border: 1px solid var(--orange);
+}
+.banner .banner-text { flex: 1; min-width: 220px; font-size: 13px; }
+.banner .banner-text strong { color: var(--orange); }
+.banner .banner-text em { color: var(--orange); font-style: normal; }
+
+.btn-skip {
+  background: #21262d;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--dim);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  cursor: pointer;
+}
+.btn-skip:hover { color: var(--red); border-color: var(--red); }
 
 .progress { margin-bottom: 12px; }
 .progress-track {

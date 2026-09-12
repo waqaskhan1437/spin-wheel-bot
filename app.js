@@ -122,13 +122,25 @@ function render(results, pending, lastRun) {
   $('#lastRun').textContent = 'Current run: ' + (results && results.runId ? results.runId : '—') +
     ' · State: ' + (results && results.state ? results.state : '—');
 
+  const total = (results && results.runTotal) || 0;
+  const done = (results && results.runDone) || 0;
+
   if (results && results.state === 'running') setStatus('running');
+  else if (results && results.state === 'ipwait') setStatus('ipwait');
   else if (results && results.state === 'done') setStatus('done');
   else if (results && results.state === 'error') setStatus('error');
   else setStatus('idle');
 
-  const total = (results && results.runTotal) || 0;
-  const done = (results && results.runDone) || 0;
+  const banner = $('#ipbanner');
+  const btnResume = $('#btnResume');
+  if (results && results.state === 'ipwait') {
+    banner.classList.remove('hidden');
+    btnResume.disabled = false;
+    btnResume.textContent = 'Resume Baki Numbers (' + (total - done) + ' baqi)';
+  } else {
+    banner.classList.add('hidden');
+  }
+
   const fill = total > 0 ? Math.min(100, Math.round(done / total * 100)) : 0;
   $('#progressFill').style.width = fill + '%';
   $('#progressLbl').textContent = total > 0
@@ -170,14 +182,22 @@ function renderTable(history, tab) {
   rows.forEach((r, i) => {
     const tr = document.createElement('tr');
     const okState = r.status === 'ok';
+    const skipBtn = okState
+      ? `<td></td>`
+      : `<td><button class="btn-skip" data-no="${esc(r.no)}" title="Worker dobara try na kare">Skip</button></td>`;
     tr.innerHTML =
       `<td class="no">${i + 1}</td>` +
       `<td class="no">${r.no || '—'}</td>` +
       `<td><span class="badge ${okState ? 'ok' : 'fail'}">${okState ? 'OK' : 'FAIL'}</span></td>` +
       `<td class="no">${r.reward || '—'}</td>` +
       `<td class="reason">${okState ? '' : (esc(r.reason) || '—')}</td>` +
-      `<td class="no">${fmtTime(r.at)}</td>`;
+      `<td class="no">${fmtTime(r.at)}</td>` +
+      skipBtn;
     tbody.appendChild(tr);
+  });
+
+  tbody.querySelectorAll('.btn-skip').forEach(btn => {
+    btn.addEventListener('click', () => markSkip(btn.dataset.no));
   });
 }
 
@@ -206,13 +226,15 @@ async function refresh() {
   render(results, pending, lastRun);
 }
 
-async function start(numbers, label) {
+async function start(numbers, label, bypassGuard) {
   const cfg = settings();
   if (!cfg.token) { setMsg('Settings mein GitHub token daalo pehle.', 'err'); openSettings(); return; }
-  const results = await fetchRawSafe('results.json');
-  if (results && results.state === 'running') {
-    setMsg('Ek run pehle se chalu hai. Khatam hone ka wait karo.', 'err');
-    return;
+  if (!bypassGuard) {
+    const results = await fetchRawSafe('results.json');
+    if (results && (results.state === 'running' || results.state === 'ipwait')) {
+      setMsg('Ek run pehle se chalu/paused hai. Pehle Resume ya clear karo.', 'err');
+      return;
+    }
   }
   const nums = numbers || parseNumbers();
   if (!nums.length) { setMsg('Koi valid 11-digit number nahi mila.', 'err'); return; }
@@ -231,6 +253,22 @@ async function start(numbers, label) {
   } finally {
     btn.disabled = false;
   }
+}
+
+async function resume() {
+  const cfg = settings();
+  if (!cfg.token) { setMsg('Settings mein GitHub token daalo pehle.', 'err'); openSettings(); return; }
+  const results = await fetchRawSafe('results.json');
+  if (!results || results.state !== 'ipwait') { setMsg('Koi paused run nahi hai.', 'err'); return; }
+  const pending = await fetchRawSafe('pending.json');
+  const history = (results && Array.isArray(results.history) && results.history) || [];
+  const skips = new Set(Array.isArray(results.skips) ? results.skips : []);
+  const done = new Set(history.filter(x => x.status === 'ok' || x.reason === 'already-used').map(x => x.no));
+  const queued = (pending && Array.isArray(pending.numbers) && pending.numbers) || [];
+  const remaining = queued.filter(n => !done.has(String(n)) && !skips.has(String(n)));
+  if (!remaining.length) { setMsg('Baaki koi number nahi — sab done ya skip.', 'info'); return; }
+  setMsg('Resume: ' + remaining.length + ' numbers re-queue ho rahe hain...', 'info');
+  await start(remaining, 'resume-' + Date.now(), true);
 }
 
 function failedRuns() {
@@ -304,6 +342,25 @@ async function retry() {
   await start(failed, 'retry-' + Date.now());
 }
 
+async function markSkip(no) {
+  const cfg = settings();
+  if (!cfg.token) { setMsg('Settings mein token daalo.', 'err'); openSettings(); return; }
+  const results = await fetchRawSafe('results.json');
+  if (!results) return;
+  const skips = new Set(Array.isArray(results.skips) ? results.skips : []);
+  skips.add(String(no));
+  const updated = { ...results, skips: [...skips], updatedAt: new Date().toISOString() };
+  let sha = null;
+  try { sha = (await github('/contents/results.json')).sha; } catch (_) {}
+  await github('/contents/results.json', 'PUT', {
+    message: 'skip ' + no,
+    content: toBase64(JSON.stringify(updated, null, 2)),
+    sha: sha || undefined,
+  });
+  setMsg(no + ' ko skip list mein daal diya (worker ise dobara nahi try karega).', 'ok');
+  refresh();
+}
+
 async function clearRecords(kind, confirmText) {
   const cfg = settings();
   if (!cfg.token) { setMsg('Settings mein token daalo.', 'err'); openSettings(); return; }
@@ -370,6 +427,7 @@ function bind() {
     if (nums.length) localStorage.setItem(LS.numbers, nums.join('\n'));
     await start(nums);
   });
+  $('#btnResume').addEventListener('click', resume);
   $('#btnSave').addEventListener('click', () => {
     localStorage.setItem(LS.numbers, $('#numbersInput').value);
     setMsg('Numbers save ho gaye in this browser.', 'ok');

@@ -48,6 +48,9 @@ jobs:
           TARGET_URL: https://my.ptcl.net.pk/SpinTheWheel/Default.aspx
           PARALLEL: '4'
           JOB_TIMEOUT_MIN: '45'
+          PAUSE_ON_IP_QUOTA: '1'
+          ALREADY_WINDOW: '6'
+          ALREADY_PAUSE_AT: '4'
 
       - name: Upload debug screenshots
         if: always()

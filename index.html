@@ -39,6 +39,10 @@
       <button id="btnClearNumbers" class="danger ghost">Clear Numbers</button>
       <button id="btnSettings" class="ghost">Settings</button>
     </div>
+    <div class="banner ipwait hidden" id="ipbanner">
+      <div class="banner-text"><strong>IP quota lag gaya</strong> — laga-taar "already used" aa raha hai. Naya IP lagao (mobile data/roaming toggle karo ya router reboot), phir <em>Resume</em> dabao. Baqi numbers pending mein mehfooz hain.</div>
+      <button id="btnResume" class="warn">&#x23F5; Resume Baki Numbers</button>
+    </div>
     <div class="msg hidden" id="msg"></div>
     <div class="lastrun" id="lastRun">Last run: —</div>
   </section>
@@ -65,6 +69,7 @@
             <th>Reward</th>
             <th>Reason</th>
             <th>Time</th>
+            <th></th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
