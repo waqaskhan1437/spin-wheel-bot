@@ -110,7 +110,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .msg.ok { background: #1f3d26; color: var(--green); }
 .msg.err { background: #3d1f1f; color: var(--red); }
 .msg.info { background: #1f2e3d; color: var(--blue); }
-.hidden { display: none; }
+.hidden { display: none !important; }
 
 .lastrun { margin-top: 10px; font-size: 12px; color: var(--dim); }
 
