@@ -59,8 +59,8 @@ async function fetchRaw(file) {
   if (cfg.token) headers['Authorization'] = 'Bearer ' + cfg.token;
   try {
     const api = await fetch(
-      `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${file}`,
-      { headers }
+      `https://api.github.com/repos/${cfg.owner}/${cfg.repo}/contents/${file}?v=${Date.now()}`,
+      { headers, cache: 'no-store' }
     );
     if (api.ok) {
       const j = await api.json();
@@ -320,4 +320,4 @@ bind();
 loadNumbers();
 autoOpenSettingsIfMissing();
 refresh();
-setInterval(refresh, 5000);
+setInterval(refresh, 3000);
