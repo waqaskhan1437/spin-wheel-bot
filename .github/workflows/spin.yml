@@ -5,12 +5,10 @@ on:
     branches: [ main ]
     paths: [ 'pending.json' ]
   workflow_dispatch:
-  schedule:
-    - cron: '25 */2 * * *'
 
 concurrency:
   group: spin-worker
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: write

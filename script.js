@@ -294,7 +294,7 @@ async function main() {
   const runId = (pending.runId && String(pending.runId)) || `job-${Date.now()}`;
 
   configureGitAuth();
-  results = { ...results, runId, state: 'running', startedAt: now(), updatedAt: now() };
+  results = { ...results, runId, state: 'running', runTotal: numbers.length, runDone: 0, startedAt: now(), updatedAt: now() };
   writeJSON(RESULTS_FILE, results);
   await publish(`start: ${runId} (${numbers.length} numbers)`);
 
@@ -348,7 +348,7 @@ async function main() {
       console.log(`[done] ${res.no} -> ${res.status}${res.reward ? ' (' + res.reward + ')' : ''}`);
 
       if (seen.size % COMMIT_EVERY === 0) {
-        const tmp = { ...results, history: resultsAcc, updatedAt: now() };
+        const tmp = { ...results, history: resultsAcc, runDone: seen.size, updatedAt: now() };
         writeJSON(RESULTS_FILE, tmp);
         await publish(`progress: ${seen.size}/${numbers.length}`);
       }
@@ -371,7 +371,7 @@ async function main() {
 
   const ok = resultsAcc.filter(x => x.status === 'ok').length;
   const fail = resultsAcc.filter(x => x.status === 'fail').length;
-  const final = { ...results, history: resultsAcc, state: 'done', doneAt: now(), updatedAt: now() };
+  const final = { ...results, history: resultsAcc, state: 'done', runDone: resultsAcc.length, runTotal: numbers.length, doneAt: now(), updatedAt: now() };
   writeJSON(RESULTS_FILE, final);
   try { writeJSON('last-run.json', { runId, finishedAt: now(), total: resultsAcc.length, ok, fail }); } catch (_) {}
   await publish(`finished: ${runId} (ok=${ok} fail=${fail})`);

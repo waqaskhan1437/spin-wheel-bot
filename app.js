@@ -77,6 +77,10 @@ function utf8FromB64(b64) {
   return new TextDecoder().decode(bytes);
 }
 
+async function fetchRawSafe(file) {
+  try { return await fetchRaw(file); } catch (_) { return null; }
+}
+
 async function putPending(content, message) {
   let sha = null;
   try {
@@ -122,6 +126,23 @@ function render(results, pending, lastRun) {
   else if (results && results.state === 'done') setStatus('done');
   else if (results && results.state === 'error') setStatus('error');
   else setStatus('idle');
+
+  const total = (results && results.runTotal) || 0;
+  const done = (results && results.runDone) || 0;
+  const fill = total > 0 ? Math.min(100, Math.round(done / total * 100)) : 0;
+  $('#progressFill').style.width = fill + '%';
+  $('#progressLbl').textContent = total > 0
+    ? `Progress: ${done} / ${total} ho gaye (${fill}%) — ${total - done} baqi`
+    : 'Progress: 0 / 0';
+
+  const btn = $('#btnStart');
+  if (results && results.state === 'running') {
+    btn.disabled = true;
+    btn.textContent = 'Run Chalu Hai...';
+  } else {
+    btn.disabled = false;
+    btn.textContent = 'Start Bot';
+  }
 
   const tab = document.querySelector('.tab.active').dataset.tab;
   renderTable(history, tab);
@@ -187,6 +208,11 @@ async function refresh() {
 async function start(numbers, label) {
   const cfg = settings();
   if (!cfg.token) { setMsg('Settings mein GitHub token daalo pehle.', 'err'); openSettings(); return; }
+  const results = await fetchRawSafe('results.json');
+  if (results && results.state === 'running') {
+    setMsg('Ek run pehle se chalu hai. Khatam hone ka wait karo.', 'err');
+    return;
+  }
   const nums = numbers || parseNumbers();
   if (!nums.length) { setMsg('Koi valid 11-digit number nahi mila.', 'err'); return; }
   const runId = label || ('job-' + new Date().toISOString().replace(/[:.]/g, '').slice(0, 17));
