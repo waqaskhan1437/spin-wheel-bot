@@ -1,7 +1,7 @@
 {
-  "runId": "job-20260912112410",
-  "finishedAt": "2026-09-12T18:41:47.166Z",
-  "total": 55,
+  "runId": "job-retry2-2026-09-12T185107",
+  "finishedAt": "2026-09-12T18:56:30.168Z",
+  "total": 81,
   "ok": 18,
-  "fail": 37
+  "fail": 63
 }
