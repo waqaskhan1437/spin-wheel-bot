@@ -1,7 +1,7 @@
 {
   "state": "running",
   "runId": "job-2026-09-12T203142",
-  "runDone": 0,
+  "runDone": 1,
   "runTotal": 1,
   "history": [
     {
@@ -12,9 +12,18 @@
       "at": "2026-09-12T20:30:56.003Z",
       "ms": 2282,
       "runId": "job-2026-09-12T202957"
+    },
+    {
+      "no": "03749933832",
+      "status": "fail",
+      "reason": "already-used",
+      "reward": "",
+      "at": "2026-09-12T20:32:38.361Z",
+      "ms": 3045,
+      "runId": "job-2026-09-12T203142"
     }
   ],
-  "updatedAt": "2026-09-12T20:32:29.065Z",
+  "updatedAt": "2026-09-12T20:32:38.361Z",
   "startedAt": "2026-09-12T20:32:29.064Z",
   "doneAt": "2026-09-12T20:31:01.595Z"
 }
