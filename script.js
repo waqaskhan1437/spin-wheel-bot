@@ -17,8 +17,8 @@ const RESULTS_FILE = 'results.json';
 const TARGET_URL = process.env.TARGET_URL || 'https://my.ptcl.net.pk/SpinTheWheel/Default.aspx';
 const PARALLEL = Math.max(1, parseInt(process.env.PARALLEL || '2', 10));
 const MAX_CAPTCHA_ATTEMPTS = parseInt(process.env.MAX_CAPTCHA_ATTEMPTS || '6', 10);
-const MIN_DELAY_MS = parseInt(process.env.MIN_DELAY_MS || '1500', 10);
-const MAX_DELAY_MS = parseInt(process.env.MAX_DELAY_MS || '4000', 10);
+const MIN_DELAY_MS = parseInt(process.env.MIN_DELAY_MS || '500', 10);
+const MAX_DELAY_MS = parseInt(process.env.MAX_DELAY_MS || '1200', 10);
 const COMMIT_EVERY = Math.max(1, parseInt(process.env.COMMIT_EVERY || '1', 10));
 const JOB_TIMEOUT_MIN = parseInt(process.env.JOB_TIMEOUT_MIN || '45', 10);
 const MAX_PAGE_WAIT_MS = parseInt(process.env.MAX_PAGE_WAIT_MS || '60000', 10);
@@ -163,14 +163,13 @@ function classifyReason(low, full) {
 
 async function extractMoneyFromPage(page, number, started) {
   let reward = '';
-  const dialogMsg = await readLastDialog(page);
   let bodyText = '';
   try {
     bodyText = await page.evaluate(() => document.body.innerText).catch(() => '');
   } catch (_) {}
-  reward = extractMoney(dialogMsg || bodyText);
+  reward = extractMoney(bodyText);
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
-  await page.screenshot({ path: path.join(OUTPUT_DIR, `${number}.png`), fullPage: true }).catch(() => {});
+  await page.screenshot({ path: path.join(OUTPUT_DIR, `${number}.png`), type: 'png' }).catch(() => {});
   return { no: number, status: 'ok', reason: '', reward, at: now(), ms: Date.now() - started };
 }
 
@@ -191,7 +190,7 @@ async function attemptSpin(page, number, runId, started) {
           const d = window.__lastDialog;
           return d && d.length > 0;
         },
-        { timeout: 25000, polling: 500 }
+        { timeout: 30000, polling: 100 }
       );
       reward = extractMoney(await page.evaluate(() => window.__lastDialog || ''));
     } catch (_) {}
@@ -201,7 +200,7 @@ async function attemptSpin(page, number, runId, started) {
     const bodyText = await page.evaluate(() => document.body.innerText).catch(() => '');
     if (!reward) reward = extractMoney(bodyText);
     fs.mkdirSync(OUTPUT_DIR, { recursive: true });
-    await page.screenshot({ path: path.join(OUTPUT_DIR, `${number}.png`), fullPage: true }).catch(() => {});
+    await page.screenshot({ path: path.join(OUTPUT_DIR, `${number}.png`), type: 'png' }).catch(() => {});
     return { no: number, status: 'ok', reason: '', reward, at: now(), ms: Date.now() - started, runId };
   } catch (_) {
     return { no: number, status: 'ok', reason: '', reward, at: now(), ms: Date.now() - started, runId };
@@ -247,7 +246,17 @@ async function spinOnce(page, number, runId) {
       continue;
     }
 
-    await sleep(1500);
+    try {
+      await page.waitForFunction(
+        () => {
+          const err = document.getElementById('lblError');
+          if (err && err.innerText && err.innerText.trim()) return true;
+          return Array.from(document.querySelectorAll('button, input[type="submit"], a, .btn'))
+            .some(e => /spin/i.test((e.id || '') + ' ' + (e.value || '') + ' ' + (e.innerText || '')));
+        },
+        { timeout: MAX_PAGE_WAIT_MS, polling: 100 }
+      );
+    } catch (_) {}
 
     errorText = await page.evaluate(() => {
       const el = document.getElementById('lblError');
@@ -352,7 +361,7 @@ async function main() {
         writeJSON(RESULTS_FILE, tmp);
         await publish(`progress: ${seen.size}/${numbers.length}`);
       }
-      await sleep(1000 + Math.floor(Math.random() * 2000));
+      await sleep(MIN_DELAY_MS + Math.floor(Math.random() * (MAX_DELAY_MS - MIN_DELAY_MS)));
     }
     await page.close().catch(() => {});
   };
