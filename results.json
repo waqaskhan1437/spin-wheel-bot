@@ -1,7 +1,7 @@
 {
   "state": "running",
   "runId": "job-ui-2026-09-12T193449",
-  "runDone": 21,
+  "runDone": 22,
   "runTotal": 30,
   "history": [
     {
@@ -192,8 +192,17 @@
       "at": "2026-09-12T19:43:48.709Z",
       "ms": 3134,
       "runId": "job-ui-2026-09-12T193449"
+    },
+    {
+      "no": "03027501208",
+      "status": "fail",
+      "reason": "already-used",
+      "reward": "",
+      "at": "2026-09-12T19:43:58.976Z",
+      "ms": 3199,
+      "runId": "job-ui-2026-09-12T193449"
     }
   ],
-  "updatedAt": "2026-09-12T19:43:48.709Z",
+  "updatedAt": "2026-09-12T19:43:58.976Z",
   "startedAt": "2026-09-12T19:35:36.910Z"
 }
