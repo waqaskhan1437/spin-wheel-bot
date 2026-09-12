@@ -22,6 +22,7 @@ const MAX_DELAY_MS = parseInt(process.env.MAX_DELAY_MS || '4000', 10);
 const COMMIT_EVERY = Math.max(1, parseInt(process.env.COMMIT_EVERY || '1', 10));
 const JOB_TIMEOUT_MIN = parseInt(process.env.JOB_TIMEOUT_MIN || '45', 10);
 const MAX_PAGE_WAIT_MS = parseInt(process.env.MAX_PAGE_WAIT_MS || '60000', 10);
+const PROTOCOL_TIMEOUT_MS = parseInt(process.env.PROTOCOL_TIMEOUT_MS || '180000', 10);
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const now = () => new Date().toISOString();
@@ -288,6 +289,7 @@ async function main() {
 
   const browser = await puppeteer.launch({
     headless: true,
+    protocolTimeout: PROTOCOL_TIMEOUT_MS,
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -321,6 +323,12 @@ async function main() {
       let res;
       try {
         res = await spinOnce(page, numbers[myIdx], runId);
+        if (res.status === 'fail' && /callFunctionOn timed out/i.test(res.reason)) {
+          console.log(`[retry] ${numbers[myIdx]}: transient timeout, trying once more`);
+          try { await page.goto('about:blank', { timeout: 15000 }).catch(() => {}); } catch (_) {}
+          res = await spinOnce(page, numbers[myIdx], runId);
+          res.ms = Date.now() - processStart;
+        }
       } catch (e) {
         res = { no: numbers[myIdx], status: 'fail', reason: 'exception-' + e.message.slice(0, 60), reward: '', at: now(), ms: Date.now() - processStart, runId };
       }
