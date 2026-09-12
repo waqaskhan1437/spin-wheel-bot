@@ -1,7 +1,7 @@
 {
   "state": "running",
   "runId": "retry-1789242441403",
-  "runDone": 3,
+  "runDone": 4,
   "runTotal": 8,
   "history": [
     {
@@ -300,9 +300,18 @@
       "at": "2026-09-12T19:48:34.328Z",
       "ms": 1874,
       "runId": "retry-1789242441403"
+    },
+    {
+      "no": "03027501201",
+      "status": "fail",
+      "reason": "already-used",
+      "reward": "",
+      "at": "2026-09-12T19:48:41.788Z",
+      "ms": 1727,
+      "runId": "retry-1789242441403"
     }
   ],
-  "updatedAt": "2026-09-12T19:48:34.329Z",
+  "updatedAt": "2026-09-12T19:48:41.788Z",
   "startedAt": "2026-09-12T19:48:10.501Z",
   "doneAt": "2026-09-12T19:45:23.452Z"
 }
