@@ -1,0 +1,20 @@
+{
+  "name": "spin-wheel-bot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Headless browser automation (GitHub Actions) for PTCL Spin the Wheel",
+  "main": "script.js",
+  "scripts": {
+    "start": "node script.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "puppeteer": "^25.10.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "sharp": "^0.35.4",
+    "tesseract.js": "^7.0.0"
+  }
+}

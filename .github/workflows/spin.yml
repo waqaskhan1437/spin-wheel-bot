@@ -1,0 +1,50 @@
+name: Spin Worker
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ 'pending.json' ]
+  workflow_dispatch:
+  schedule:
+    - cron: '25 */2 * * *'
+
+concurrency:
+  group: spin-worker
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run bot
+        run: node script.js
+        env:
+          TARGET_URL: https://my.ptcl.net.pk/SpinTheWheel/Default.aspx
+          PARALLEL: '2'
+          JOB_TIMEOUT_MIN: '45'
+
+      - name: Upload debug screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-screenshots
+          path: output/
+          if-no-files-found: ignore

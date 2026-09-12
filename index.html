@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spin Wheel Control Panel</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Spin Wheel Bot</h1>
+  <div class="status-pill" id="statusPill">IDLE</div>
+</header>
+
+<main>
+  <section class="stats">
+    <div class="stat"><span class="num" id="statTotal">0</span><span class="lbl">Processed</span></div>
+    <div class="stat ok"><span class="num" id="statOk">0</span><span class="lbl">Success</span></div>
+    <div class="stat fail"><span class="num" id="statFail">0</span><span class="lbl">Failed</span></div>
+    <div class="stat cash"><span class="num" id="statCash">PKR 0</span><span class="lbl">Winnings</span></div>
+    <div class="stat queue"><span class="num" id="statQueue">0</span><span class="lbl">In Queue</span></div>
+  </section>
+
+  <section class="panel">
+    <h2>Numbers</h2>
+    <textarea id="numbersInput" rows="8" placeholder="Ek line per number&#10;03123456789&#10;03009876543"></textarea>
+    <div class="actions">
+      <button id="btnStart" class="primary">Start Bot</button>
+      <button id="btnRetry" class="warn">Retry Failed</button>
+      <button id="btnSave" class="ghost">Save Numbers</button>
+      <button id="btnSettings" class="ghost">Settings</button>
+    </div>
+    <div class="msg hidden" id="msg"></div>
+    <div class="lastrun" id="lastRun">Last run: —</div>
+  </section>
+
+  <section class="panel">
+    <div class="tabs">
+      <button class="tab active" data-tab="fail">Failed</button>
+      <button class="tab" data-tab="ok">Success</button>
+      <button class="tab" data-tab="all">All</button>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Number</th>
+            <th>Status</th>
+            <th>Reward</th>
+            <th>Reason</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+      <div class="empty hidden" id="empty">Koi result nahi mila. Start karo + thodi der wait.</div>
+    </div>
+  </section>
+</main>
+
+<div id="settingsModal" class="modal hidden">
+  <div class="modal-box">
+    <h2>Settings</h2>
+    <label>Owner</label>
+    <input id="setOwner" placeholder="waqaskhan1437">
+    <label>Repo</label>
+    <input id="setRepo" placeholder="spin-wheel-bot">
+    <label>GitHub Token (fine-grained, sirf is repo ko access)</label>
+    <input id="setToken" type="password" placeholder="github_pat_...">
+    <p class="hint">Token sirf tumhare browser (localStorage) mein save rahega, kisi server pe nahi jayega. Jab tak browser data delete na ho, save rahega.</p>
+    <div class="actions">
+      <button id="btnSaveSettings" class="primary">Save</button>
+      <button id="btnClearLocal" class="danger ghost">Clear saved data</button>
+      <button id="btnCloseSettings" class="ghost">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
