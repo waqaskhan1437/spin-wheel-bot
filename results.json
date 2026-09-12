@@ -1,5 +1,5 @@
 {
-  "state": "done",
+  "state": "running",
   "runId": "job-TEST-20260912102902",
   "history": [
     {
@@ -21,7 +21,7 @@
       "runId": "job-TEST-20260912102902"
     }
   ],
-  "startedAt": "2026-09-12T17:29:33.251Z",
-  "updatedAt": "2026-09-12T17:29:39.350Z",
+  "startedAt": "2026-09-12T17:30:57.909Z",
+  "updatedAt": "2026-09-12T17:30:57.909Z",
   "doneAt": "2026-09-12T17:29:39.350Z"
 }
