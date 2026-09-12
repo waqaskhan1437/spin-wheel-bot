@@ -1,5 +1,5 @@
 {
-  "state": "running",
+  "state": "done",
   "runId": "job-TEST-20260912102902",
   "history": [
     {
@@ -19,9 +19,27 @@
       "at": "2026-09-12T17:29:37.193Z",
       "ms": 1780,
       "runId": "job-TEST-20260912102902"
+    },
+    {
+      "no": "03001111111",
+      "status": "fail",
+      "reason": "page-load-failed",
+      "reward": "",
+      "at": "2026-09-12T17:31:03.132Z",
+      "ms": 1367,
+      "runId": "job-TEST-20260912102902"
+    },
+    {
+      "no": "03002222222",
+      "status": "fail",
+      "reason": "page-load-failed",
+      "reward": "",
+      "at": "2026-09-12T17:31:03.384Z",
+      "ms": 1618,
+      "runId": "job-TEST-20260912102902"
     }
   ],
   "startedAt": "2026-09-12T17:30:57.909Z",
-  "updatedAt": "2026-09-12T17:30:57.909Z",
-  "doneAt": "2026-09-12T17:29:39.350Z"
+  "updatedAt": "2026-09-12T17:31:05.862Z",
+  "doneAt": "2026-09-12T17:31:05.862Z"
 }
