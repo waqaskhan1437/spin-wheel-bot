@@ -1,8 +1,9 @@
 {
-  "state": "idle",
-  "runId": "",
+  "state": "running",
+  "runId": "job-ui-2026-09-12T193449",
   "runDone": 0,
-  "runTotal": 0,
+  "runTotal": 30,
   "history": [],
-  "updatedAt": ""
+  "updatedAt": "2026-09-12T19:35:36.910Z",
+  "startedAt": "2026-09-12T19:35:36.910Z"
 }
