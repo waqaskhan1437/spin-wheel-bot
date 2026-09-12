@@ -125,11 +125,20 @@
       "at": "2026-09-12T18:33:53.841Z",
       "ms": 192365,
       "runId": "job-20260912112410"
+    },
+    {
+      "no": "03027501129",
+      "status": "fail",
+      "reason": "exception-Runtime.callFunctionOn timed out. Increase the 'protocolTime",
+      "reward": "",
+      "at": "2026-09-12T18:33:57.580Z",
+      "ms": 196085,
+      "runId": "job-20260912112410"
     }
   ],
   "runId": "job-20260912112410",
   "state": "running",
   "startedAt": "2026-09-12T18:30:36.553Z",
-  "updatedAt": "2026-09-12T18:33:53.841Z",
+  "updatedAt": "2026-09-12T18:33:57.580Z",
   "doneAt": "2026-09-12T18:19:44.117Z"
 }
