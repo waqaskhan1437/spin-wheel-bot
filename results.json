@@ -1,7 +1,7 @@
 {
   "state": "running",
   "runId": "job-ui-2026-09-12T193449",
-  "runDone": 7,
+  "runDone": 8,
   "runTotal": 30,
   "history": [
     {
@@ -66,8 +66,17 @@
       "at": "2026-09-12T19:38:47.124Z",
       "ms": 185209,
       "runId": "job-ui-2026-09-12T193449"
+    },
+    {
+      "no": "03027501187",
+      "status": "fail",
+      "reason": "exception-Runtime.callFunctionOn timed out. Increase the 'protocolTime",
+      "reward": "",
+      "at": "2026-09-12T19:38:51.228Z",
+      "ms": 189286,
+      "runId": "job-ui-2026-09-12T193449"
     }
   ],
-  "updatedAt": "2026-09-12T19:38:47.124Z",
+  "updatedAt": "2026-09-12T19:38:51.228Z",
   "startedAt": "2026-09-12T19:35:36.910Z"
 }
