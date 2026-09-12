@@ -1,7 +1,7 @@
 {
   "runId": "job-TEST-20260912102902",
-  "finishedAt": "2026-09-12T17:31:05.862Z",
-  "total": 4,
-  "ok": 0,
+  "finishedAt": "2026-09-12T17:43:18.612Z",
+  "total": 6,
+  "ok": 2,
   "fail": 4
 }
