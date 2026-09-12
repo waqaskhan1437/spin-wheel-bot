@@ -373,6 +373,7 @@ async function main() {
   const fail = resultsAcc.filter(x => x.status === 'fail').length;
   const final = { ...results, history: resultsAcc, state: 'done', runDone: numbers.length, runTotal: numbers.length, doneAt: now(), updatedAt: now() };
   writeJSON(RESULTS_FILE, final);
+  try { writeJSON('pending.json', { runId: '', createdAt: '', numbers: [] }); } catch (_) {}
   try { writeJSON('last-run.json', { runId, finishedAt: now(), total: resultsAcc.length, ok, fail }); } catch (_) {}
   await publish(`finished: ${runId} (ok=${ok} fail=${fail})`);
   console.log(`[summary] ok=${ok} fail=${fail} total=${resultsAcc.length}`);
