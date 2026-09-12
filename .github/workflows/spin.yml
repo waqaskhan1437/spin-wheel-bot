@@ -27,8 +27,13 @@ jobs:
 
       - name: Probe site reachability
         run: |
-          echo "== HTTP =="
-          curl.exe -v --max-time 20 -o NUL "https://my.ptcl.net.pk/SpinTheWheel/Default.aspx" 2>&1 | Select-String -Pattern 'Connected|SSL|HTTP|error|Could|HTTP/' | Select-Object -First 10
+          $ProgressPreference = 'SilentlyContinue'
+          try {
+            $code = & curl.exe -sS -o NUL -w "%{http_code}" --max-time 20 "https://my.ptcl.net.pk/SpinTheWheel/Default.aspx"
+            Write-Host "HTTP $code"
+          } catch {
+            Write-Host "curl failed: $($_.Exception.Message)"
+          }
 
       - name: Setup Node
         uses: actions/setup-node@v4
