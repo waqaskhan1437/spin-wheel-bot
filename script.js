@@ -27,7 +27,11 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const now = () => new Date().toISOString();
 
 function readJSON(file, fallback) {
-  try { return JSON.parse(fs.readFileSync(path.join(ROOT, file), 'utf8')); }
+  try {
+    let raw = fs.readFileSync(path.join(ROOT, file), 'utf8');
+    if (raw.charCodeAt(0) === 0xFEFF) raw = raw.slice(1);
+    return JSON.parse(raw);
+  }
   catch (_) { return fallback; }
 }
 function writeJSON(file, obj) {
