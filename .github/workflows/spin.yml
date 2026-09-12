@@ -25,6 +25,13 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Probe site reachability
+        run: |
+          echo "== DNS =="
+          nslookup my.ptcl.net.pk || true
+          echo "== HTTP =="
+          curl -v --max-time 20 -o /dev/null "https://my.ptcl.net.pk/SpinTheWheel/Default.aspx" 2>&1 | tail -30 || true
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
