@@ -131,6 +131,7 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .lastrun { margin-top: 10px; font-size: 12px; color: var(--dim); }
 
 .tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+.record-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 .tab {
   background: transparent;
   border: 1px solid var(--border);

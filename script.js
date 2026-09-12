@@ -27,6 +27,23 @@ const PROTOCOL_TIMEOUT_MS = parseInt(process.env.PROTOCOL_TIMEOUT_MS || '180000'
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const now = () => new Date().toISOString();
 
+function waitForDialog(page, timeoutMs) {
+  return new Promise((resolve) => {
+    let done = false;
+    const timer = setTimeout(() => {
+      if (!done) { page.off('dialog', handler); resolve(null); }
+    }, timeoutMs);
+    function handler(d) {
+      done = true;
+      clearTimeout(timer);
+      const msg = (d.message() || '').trim();
+      d.accept().then(() => page.off('dialog', handler)).catch(() => page.off('dialog', handler));
+      resolve(msg);
+    }
+    page.on('dialog', handler);
+  });
+}
+
 function readJSON(file, fallback) {
   try {
     let raw = fs.readFileSync(path.join(ROOT, file), 'utf8');
@@ -104,7 +121,7 @@ async function solveCaptcha(page) {
         const i = document.getElementById('imgCaptcha');
         return i && i.complete && i.naturalWidth > 0;
       },
-      { timeout: 20000, polling: 250 }
+      { timeout: 20000, polling: 50 }
     );
   } catch (_) {
     return '';
@@ -175,8 +192,16 @@ async function extractMoneyFromPage(page, number, started) {
 
 async function attemptSpin(page, number, runId, started) {
   let reward = '';
+
+  // Arm all event promises BEFORE triggering so nothing can be missed.
+  const dialogP = waitForDialog(page, 30000);
+  const respP = page.waitForResponse(
+    r => r.request().method() === 'POST' && r.url().includes('SpinTheWheel'),
+    { timeout: MAX_PAGE_WAIT_MS }
+  ).catch(() => null);
+
   const spinPressed = await page.evaluate(() => {
-    const els = Array.from(document.querySelectorAll('button, input[type="submit"], a, .btn'));
+    const els = Array.from(document.querySelectorAll('#btnSpin, button, input[type="submit"], a, .btn'));
     const el = els.find(e => /spin/i.test((e.id || '') + ' ' + (e.value || '') + ' ' + (e.innerText || '')));
     if (el) { el.click(); return true; }
     return false;
@@ -184,16 +209,13 @@ async function attemptSpin(page, number, runId, started) {
 
   if (spinPressed) {
     console.log(`[spin] ${number}: spin button pressed`);
-    try {
-      const res = await page.waitForFunction(
-        () => {
-          const d = window.__lastDialog;
-          return d && d.length > 0;
-        },
-        { timeout: 30000, polling: 100 }
-      );
-      reward = extractMoney(await page.evaluate(() => window.__lastDialog || ''));
-    } catch (_) {}
+    const res = await respP;
+    if (res) console.log(`[nav] ${number}: spin response received (${res.status()})`);
+    const msg = await dialogP;
+    if (msg) {
+      reward = extractMoney(msg);
+      console.log(`[spin] ${number}: got dialog "${msg.slice(0, 90)}"`);
+    }
   }
 
   try {
@@ -214,7 +236,14 @@ async function spinOnce(page, number, runId) {
   for (let attempt = 1; attempt <= MAX_CAPTCHA_ATTEMPTS; attempt++) {
     try {
       await page.goto(TARGET_URL, { waitUntil: 'domcontentloaded', timeout: MAX_PAGE_WAIT_MS });
-      await page.waitForSelector('#txtMobile', { timeout: MAX_PAGE_WAIT_MS });
+      await page.waitForFunction(
+        () => {
+          const i = document.getElementById('imgCaptcha');
+          const m = document.getElementById('txtMobile');
+          return m && i && i.complete && i.naturalWidth > 0;
+        },
+        { timeout: MAX_PAGE_WAIT_MS, polling: 50 }
+      );
     } catch (_) {
       return { no: number, status: 'fail', reason: 'page-load-failed', reward: '', at: now(), ms: Date.now() - started, runId };
     }
@@ -235,10 +264,16 @@ async function spinOnce(page, number, runId) {
       if (c) c.checked = true;
     });
 
+    // Fire-and-wait: response event resolves the instant the server answers the postback.
+    const respP = page.waitForResponse(
+      r => r.request().method() === 'POST' && r.url().includes('SpinTheWheel'),
+      { timeout: MAX_PAGE_WAIT_MS }
+    ).catch(() => null);
+
     let errorText = '';
     try {
       await Promise.all([
-        page.waitForNavigation({ waitUntil: 'networkidle2', timeout: MAX_PAGE_WAIT_MS }).catch(() => {}),
+        respP,
         page.click('#btnNext'),
       ]);
     } catch (_) {
@@ -246,15 +281,18 @@ async function spinOnce(page, number, runId) {
       continue;
     }
 
+    const submitted = await respP;
+    if (submitted) console.log(`[nav] ${number} attempt ${attempt}: server responded (${submitted.status()})`);
+
     try {
       await page.waitForFunction(
         () => {
           const err = document.getElementById('lblError');
           if (err && err.innerText && err.innerText.trim()) return true;
-          return Array.from(document.querySelectorAll('button, input[type="submit"], a, .btn'))
+          return Array.from(document.querySelectorAll('#btnSpin, button, input[type="submit"], a, .btn'))
             .some(e => /spin/i.test((e.id || '') + ' ' + (e.value || '') + ' ' + (e.innerText || '')));
         },
-        { timeout: MAX_PAGE_WAIT_MS, polling: 100 }
+        { timeout: MAX_PAGE_WAIT_MS, polling: 50 }
       );
     } catch (_) {}
 

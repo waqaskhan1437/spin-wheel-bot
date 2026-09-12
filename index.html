@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Spin Wheel Control Panel</title>
 <link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
 <header>
@@ -34,6 +36,7 @@
       <button id="btnStart" class="primary">Start Bot</button>
       <button id="btnRetry" class="warn">Retry Failed</button>
       <button id="btnSave" class="ghost">Save Numbers</button>
+      <button id="btnClearNumbers" class="danger ghost">Clear Numbers</button>
       <button id="btnSettings" class="ghost">Settings</button>
     </div>
     <div class="msg hidden" id="msg"></div>
@@ -45,6 +48,12 @@
       <button class="tab active" data-tab="fail">Failed</button>
       <button class="tab" data-tab="ok">Success</button>
       <button class="tab" data-tab="all">All</button>
+    </div>
+    <div class="record-actions">
+      <button id="btnPdfFail" class="ghost">PDF: Failed</button>
+      <button id="btnPdfOk" class="ghost">PDF: Success</button>
+      <button id="btnClearFail" class="danger ghost">Clear Failed</button>
+      <button id="btnClearOk" class="danger ghost">Clear Success</button>
     </div>
     <div class="tablewrap">
       <table>

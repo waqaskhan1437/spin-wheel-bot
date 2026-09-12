@@ -159,6 +159,7 @@ function renderTable(history, tab) {
 
   const tbody = $('#tbody');
   tbody.innerHTML = '';
+  tbody.dataset.raw = JSON.stringify(history);
 
   if (!rows.length) {
     $('#empty').classList.remove('hidden');
@@ -238,6 +239,56 @@ function failedRuns() {
   return { runId, history: [] };
 }
 
+function downloadPdf(kind) {
+  const { owner, repo } = settings();
+  const tbody = $('#tbody');
+  const status = kind === 'ok' ? 'SUCCESS' : 'FAILED';
+  let items;
+  try {
+    const rows = JSON.parse(tbody.dataset.raw || '[]');
+    items = rows.filter(r => r.status === (kind === 'ok' ? 'ok' : 'fail'));
+  } catch (_) { items = []; }
+  if (!items.length) { setMsg('PDF ke liye koi ' + status + ' record nahi.', 'err'); return; }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+  const pageWidth = doc.internal.pageSize.getWidth();
+
+  doc.setFontSize(16);
+  doc.setTextColor(243, 128, 31);
+  doc.text('Spin Wheel Bot - ' + status + ' Record', 40, 40);
+  doc.setFontSize(9);
+  doc.setTextColor(130);
+  doc.text('Repo: ' + owner + '/' + repo + '   |   Generated: ' + new Date().toLocaleString(), 40, 56);
+
+  doc.autoTable({
+    startY: 72,
+    head: [['#', 'Number', 'Reward', 'Reason', 'Time']],
+    body: items.map((r, i) => [
+      String(i + 1),
+      r.no || '-',
+      r.reward || '-',
+      (kind === 'ok' ? '-' : (r.reason || '-')),
+      fmtTime(r.at),
+    ]),
+    styles: { fontSize: 8, cellPadding: 4 },
+    headStyles: { fillColor: [243, 128, 31], textColor: [255, 255, 255] },
+    alternateRowStyles: { fillColor: [22, 27, 34] },
+  });
+
+  const total = doc.getNumberOfPages();
+  for (let i = 1; i <= total; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(130);
+    doc.text('Page ' + i + ' / ' + total, pageWidth - 40, doc.internal.pageSize.getHeight() - 20, { align: 'right' });
+  }
+
+  const fname = 'spin-' + kind + '-records-' + new Date().toISOString().slice(0, 10) + '.pdf';
+  doc.save(fname);
+  setMsg(status + ' PDF download hui: ' + fname + ' (' + items.length + ' entries)', 'ok');
+}
+
 async function retry() {
   const cfg = settings();
   if (!cfg.token) { setMsg('Settings mein token daalo.', 'err'); openSettings(); return; }
@@ -251,6 +302,34 @@ async function retry() {
   if (!failed.length) { setMsg('Is run mein koi failed number nahi.', 'err'); return; }
   setMsg('Retrying ' + failed.length + ' failed numbers...', 'info');
   await start(failed, 'retry-' + Date.now());
+}
+
+async function clearRecords(kind, confirmText) {
+  const cfg = settings();
+  if (!cfg.token) { setMsg('Settings mein token daalo.', 'err'); openSettings(); return; }
+  if (!confirm(confirmText)) return;
+  const results = await fetchRawSafe('results.json');
+  if (!results || !Array.isArray(results.history)) { setMsg('results.json null hai, clear nahi hua.', 'err'); return; }
+  const before = results.history.length;
+  const keep = results.history.filter(x => x.status !== kind);
+  if (keep.length === before) { setMsg('Is type ka koi record nahi.', 'info'); return; }
+
+  const updated = { ...results, history: keep, updatedAt: new Date().toISOString() };
+  let sha = null;
+  try { sha = (await github('/contents/results.json')).sha; } catch (_) {}
+  await github('/contents/results.json', 'PUT', {
+    message: 'clear ' + kind + ' records (' + (before - keep.length) + ')',
+    content: toBase64(JSON.stringify(updated, null, 2)),
+    sha: sha || undefined,
+  });
+  setMsg((kind === 'ok' ? 'Success' : 'Failed') + ' records clear: ' + (before - keep.length) + ' hataye, ' + keep.length + ' rahe.', 'ok');
+  refresh();
+}
+
+function clearNumbersInput() {
+  $('#numbersInput').value = '';
+  localStorage.removeItem(LS.numbers);
+  setMsg('Numbers box clear ho gaya.', 'ok');
 }
 
 function openSettings() {
@@ -296,6 +375,11 @@ function bind() {
     setMsg('Numbers save ho gaye in this browser.', 'ok');
   });
   $('#btnRetry').addEventListener('click', retry);
+  $('#btnPdfFail').addEventListener('click', () => downloadPdf('fail'));
+  $('#btnPdfOk').addEventListener('click', () => downloadPdf('ok'));
+  $('#btnClearFail').addEventListener('click', () => clearRecords('fail', 'Failed (FAIL) records sab delete kar dein? results.json update hoga.'));
+  $('#btnClearOk').addEventListener('click', () => clearRecords('ok', 'Success (OK) records sab delete kar dein? results.json update hoga.'));
+  $('#btnClearNumbers').addEventListener('click', clearNumbersInput);
   $('#btnSettings').addEventListener('click', openSettings);
   $('#btnCloseSettings').addEventListener('click', closeSettings);
   $('#settingsModal').addEventListener('click', e => {
